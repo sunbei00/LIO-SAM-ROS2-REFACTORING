@@ -1,5 +1,5 @@
-import os
 from ament_index_python.packages import get_package_share_directory
+import os
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration, Command
@@ -19,7 +19,6 @@ def generate_launch_description():
             share_dir, 'config', 'params.yaml'),
         description='FPath to the ROS2 parameters file to use.')
 
-    print("urdf_file_name : {}".format(xacro_path))
 
     return LaunchDescription([
         params_declare,
@@ -29,11 +28,11 @@ def generate_launch_description():
             arguments='0.0 0.0 0.0 0.0 0.0 0.0 map odom'.split(' '),
             parameters=[parameter_file],
             output='screen'
-            ),
+        ),
         Node(
             package='robot_state_publisher',
             executable='robot_state_publisher',
-            name='robot_state_publisher',
+            name='robot_state_publisher_tf_static',
             output='screen',
             parameters=[{
                 'robot_description': Command(['xacro', ' ', xacro_path])
@@ -73,5 +72,5 @@ def generate_launch_description():
             name='rviz2',
             arguments=['-d', rviz_config_file],
             output='screen'
-        )
+        ),
     ])
