@@ -62,7 +62,7 @@ set(COMMON_DEP2 ${COMMON_DEP1} nav_msgs sensor_msgs std_msgs)
 
 # featureExtraction
 add_executable(${PROJECT_NAME}_featureExtraction
-        src/nodeFE.cpp
+        src/nodes/nodeFE.cpp
         src/components/FeatureExtraction.cpp
         ${COMMON_SRC}
         ${PCL_SRC})
@@ -75,21 +75,20 @@ target_link_libraries(${PROJECT_NAME}_featureExtraction
 
 # imageProjection
 add_executable(${PROJECT_NAME}_imageProjection
-        src/nodeIP.cpp
+        src/nodes/nodeIP.cpp
         src/components/ImageProjection.cpp
         ${COMMON_SRC}
         ${PCL_SRC})
 ament_target_dependencies(${PROJECT_NAME}_imageProjection
         ${COMMON_DEP2}
-        PCL
-        OpenCV)
+        PCL)
 target_link_libraries(${PROJECT_NAME}_imageProjection
         "${cpp_typesupport_target}")
 
 
 # imuPreintegration
 add_executable(${PROJECT_NAME}_imuPreintegration
-        src/nodeIPI.cpp
+        src/nodes/nodeIPI.cpp
         src/components/ImuPreintegration.cpp
         src/components/TransformFusion.cpp
         ${COMMON_SRC})
@@ -103,10 +102,12 @@ target_link_libraries(${PROJECT_NAME}_imuPreintegration
 
 # mapOptimization
 add_executable(${PROJECT_NAME}_mapOptimization
-        src/nodeMO.cpp
+        src/nodes/nodeMO.cpp
         src/components/MapOptmization.cpp
+        src/components/MOInitializer.cpp
         src/components/MOVisualize.cpp
         src/components/MOLoopClosure.cpp
+        src/components/MOPublish.cpp
         ${COMMON_SRC}
         ${PCL_SRC}
         ${GTSAM_SRC})

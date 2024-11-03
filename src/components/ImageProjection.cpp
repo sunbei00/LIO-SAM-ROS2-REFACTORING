@@ -1,9 +1,16 @@
 #include "ImageProjection.h"
 #include "utils/QoS.h"
+#include "utils/imuUtils.h"
+#include "utils/pclUtils.h"
+#include "utils/utils.h"
+
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 
 ImageProjection::ImageProjection(const rclcpp::NodeOptions & options) :
-            ParamServer("lio_sam_imageProjection", options), deskewFlag(0)
+            ParamServer("lio_sam_imageProjection", options)
 {
     callbackGroupLidar = create_callback_group(
         rclcpp::CallbackGroupType::MutuallyExclusive);
@@ -46,7 +53,6 @@ ImageProjection::ImageProjection(const rclcpp::NodeOptions & options) :
 void ImageProjection::allocateMemory()
 {
     laserCloudIn.reset(new pcl::PointCloud<PointXYZIRT>());
-    tmpOusterCloudIn.reset(new pcl::PointCloud<OusterPointXYZIRT>());
     fullCloud.reset(new pcl::PointCloud<PointType>());
     extractedCloud.reset(new pcl::PointCloud<PointType>());
 
@@ -66,7 +72,7 @@ void ImageProjection::resetParameters()
     laserCloudIn->clear();
     extractedCloud->clear();
     // reset range matrix for range image projection
-    rangeMat = cv::Mat(N_SCAN, Horizon_SCAN, CV_32F, cv::Scalar::all(FLT_MAX));
+    rangeMat =  Eigen::MatrixXf::Constant(N_SCAN, Horizon_SCAN, std::numeric_limits<float>::max());
 
     imuPointerCur = 0;
     firstPointFlag = true;
@@ -108,6 +114,8 @@ void ImageProjection::imuHandler(const sensor_msgs::msg::Imu::SharedPtr imuMsg)
     // cout << "roll: " << imuRoll << ", pitch: " << imuPitch << ", yaw: " << imuYaw << endl << endl;
 }
 
+// odometry/imu_incremental from imuPreintegration.cpp (imu hz)
+// this msg is started after imageProjection -> featureExtraction -> mapOptimization -> imuPreintegration
 void ImageProjection::odometryHandler(const nav_msgs::msg::Odometry::SharedPtr odometryMsg)
 {
     std::lock_guard<std::mutex> lock2(odoLock);
@@ -139,14 +147,17 @@ bool ImageProjection::cachePointCloud(const sensor_msgs::msg::PointCloud2::Share
         return false;
 
     // convert cloud
-    currentCloudMsg = std::move(cloudQueue.front());
+    sensor_msgs::msg::PointCloud2 currentCloudMsg = std::move(cloudQueue.front());
     cloudQueue.pop_front();
     if (sensor == SensorType::VELODYNE || sensor == SensorType::LIVOX)
     {
         pcl::moveFromROSMsg(currentCloudMsg, *laserCloudIn);
     }
-    else if (sensor == SensorType::OUSTER)
+    else if (sensor == SensorType::OUSTER) // laser is converted based on velodyne's time stamp.
     {
+        pcl::PointCloud<OusterPointXYZIRT>::Ptr tmpOusterCloudIn;
+        tmpOusterCloudIn.reset(new pcl::PointCloud<OusterPointXYZIRT>());
+
         // Convert to Velodyne format
         pcl::moveFromROSMsg(currentCloudMsg, *tmpOusterCloudIn);
         laserCloudIn->points.resize(tmpOusterCloudIn->size());
@@ -175,8 +186,8 @@ bool ImageProjection::cachePointCloud(const sensor_msgs::msg::PointCloud2::Share
     timeScanEnd = timeScanCur + laserCloudIn->points.back().time;
 
     // remove Nan
-    vector<int> indices;
-    pcl::removeNaNFromPointCloud(*laserCloudIn, *laserCloudIn, indices);
+    vector<int> indices; // using once
+    pcl::removeNaNFromPointCloud(*laserCloudIn, *laserCloudIn, indices); // function remove NaN points and set 'is_dense = true'.
 
     // check dense flag
     if (laserCloudIn->is_dense == false)
@@ -187,7 +198,7 @@ bool ImageProjection::cachePointCloud(const sensor_msgs::msg::PointCloud2::Share
 
     // check ring channel
     // we will skip the ring check in case of velodyne - as we calculate the ring value downstream (line 572)
-    if (ringFlag == 0)
+    if (ringFlag == 0) // 0 is init
     {
         ringFlag = -1;
         for (int i = 0; i < (int)currentCloudMsg.fields.size(); ++i)
@@ -422,14 +433,14 @@ void ImageProjection::findPosition(double relTime, float *posXCur, float *posYCu
 
     // If the sensor moves relatively slow, like walking speed, positional deskew seems to have little benefits. Thus code below is commented.
 
-    // if (cloudInfo.odomAvailable == false || odomDeskewFlag == false)
-    //     return;
+     if (cloudInfo.odom_available == false || odomDeskewFlag == false)
+         return;
 
-    // float ratio = relTime / (timeScanEnd - timeScanCur);
+     float ratio = relTime / (timeScanEnd - timeScanCur);
 
-    // *posXCur = ratio * odomIncreX;
-    // *posYCur = ratio * odomIncreY;
-    // *posZCur = ratio * odomIncreZ;
+     *posXCur = ratio * odomIncreX;
+     *posYCur = ratio * odomIncreY;
+     *posZCur = ratio * odomIncreZ;
 }
 
 PointType ImageProjection::deskewPoint(PointType *point, double relTime)
@@ -515,12 +526,12 @@ void ImageProjection::projectPointCloud()
         if (columnIdn < 0 || columnIdn >= Horizon_SCAN)
             continue;
 
-        if (rangeMat.at<float>(rowIdn, columnIdn) != FLT_MAX)
+        if (rangeMat(rowIdn, columnIdn) != std::numeric_limits<float>::max())
             continue;
 
         thisPoint = deskewPoint(&thisPoint, laserCloudIn->points[i].time);
 
-        rangeMat.at<float>(rowIdn, columnIdn) = range;
+        rangeMat(rowIdn, columnIdn) = range;
 
         int index = columnIdn + rowIdn * Horizon_SCAN;
         fullCloud->points[index] = thisPoint;
@@ -536,19 +547,19 @@ void ImageProjection::cloudExtraction()
         cloudInfo.start_ring_index[i] = count - 1 + 5;
         for (int j = 0; j < Horizon_SCAN; ++j)
         {
-            if (rangeMat.at<float>(i,j) != FLT_MAX)
+            if (rangeMat(i, j) != std::numeric_limits<float>::max())
             {
                 // mark the points' column index for marking occlusion later
                 cloudInfo.point_col_ind[count] = j;
                 // save range info
-                cloudInfo.point_range[count] = rangeMat.at<float>(i,j);
+                cloudInfo.point_range[count] = rangeMat(i, j);
                 // save extracted cloud
                 extractedCloud->push_back(fullCloud->points[j + i*Horizon_SCAN]);
                 // size of extracted cloud
                 ++count;
             }
         }
-        cloudInfo.end_ring_index[i] = count -1 - 5;
+        cloudInfo.end_ring_index[i] = count - 1 - 5;
     }
 }
 

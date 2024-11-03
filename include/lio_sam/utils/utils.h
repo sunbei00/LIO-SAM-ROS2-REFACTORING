@@ -8,9 +8,8 @@
 #include <rclcpp/rclcpp.hpp>
 
 template<typename T>
-double stamp2Sec(const T& stamp)
-{
-return rclcpp::Time(stamp).seconds();
+double stamp2Sec(const T& stamp) {
+    return rclcpp::Time(stamp).seconds();
 }
 
 #endif //BUILD_UTILS_H

@@ -5,14 +5,11 @@
 #ifndef BUILD_FEATUREEXTRACTION_H
 #define BUILD_FEATUREEXTRACTION_H
 
-#include "utils/ParamServer.h"
-#include "utils/pclUtils.h"
 #include "lio_sam/msg/cloud_info.hpp"
 
-#define PCL_NO_PRECOMPILE
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl_conversions/pcl_conversions.h>
+#include "utils/ParamServer.h"
+#include "utils/pclType.h"
+
 #include <pcl/filters/voxel_grid.h>
 
 
@@ -35,9 +32,9 @@ public:
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubCornerPoints;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubSurfacePoints;
 
-    pcl::PointCloud<PointType>::Ptr extractedCloud;
-    pcl::PointCloud<PointType>::Ptr cornerCloud;
-    pcl::PointCloud<PointType>::Ptr surfaceCloud;
+    pcl::PointCloud<PointType>::Ptr extractedCloud;                     // deskew point cloud
+    pcl::PointCloud<PointType>::Ptr cornerCloud;                        // corner point cloud
+    pcl::PointCloud<PointType>::Ptr surfaceCloud;                       // surf point cloud
 
     pcl::VoxelGrid<PointType> downSizeFilter;
 

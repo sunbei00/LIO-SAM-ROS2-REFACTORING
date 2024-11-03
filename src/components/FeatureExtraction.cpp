@@ -1,5 +1,6 @@
 #include "FeatureExtraction.h"
 #include "utils/QoS.h"
+#include "utils/pclUtils.h"
 
 
 FeatureExtraction::FeatureExtraction(const rclcpp::NodeOptions & options) : ParamServer("lio_sam_featureExtraction", options)

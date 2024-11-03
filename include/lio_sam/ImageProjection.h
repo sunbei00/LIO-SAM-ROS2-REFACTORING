@@ -6,21 +6,14 @@
 #define BUILD_IMAGEPROJECTION_H
 
 #include "utils/ParamServer.h"
-#include "utils/imuUtils.h"
-#include "utils/pclUtils.h"
-#include "utils/utils.h"
-
 #include "utils/pclType.h"
 #include "lio_sam/msg/cloud_info.hpp"
-
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2/LinearMath/Matrix3x3.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 #include <nav_msgs/msg/odometry.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 
-#include <opencv2/opencv.hpp>
+#include <Eigen/Dense>
+#include <deque>
 
 const int queueLength = 2000;
 
@@ -45,8 +38,8 @@ private:
     std::deque<nav_msgs::msg::Odometry> odomQueue;
 
     std::deque<sensor_msgs::msg::PointCloud2> cloudQueue;
-    sensor_msgs::msg::PointCloud2 currentCloudMsg;
 
+    // is is set by imuDeskewInfo() and it is integrated IMU's rotation
     double *imuTime = new double[queueLength];
     double *imuRotX = new double[queueLength];
     double *imuRotY = new double[queueLength];
@@ -56,24 +49,24 @@ private:
     bool firstPointFlag;
     Eigen::Affine3f transStartInverse;
 
-    pcl::PointCloud<PointXYZIRT>::Ptr laserCloudIn;
-    pcl::PointCloud<OusterPointXYZIRT>::Ptr tmpOusterCloudIn;
-    pcl::PointCloud<PointType>::Ptr   fullCloud;
+    pcl::PointCloud<PointXYZIRT>::Ptr laserCloudIn;     // dense format lidar point cloud
+    pcl::PointCloud<PointType>::Ptr   fullCloud;        // deskew point based on rowIdx, colIdx
     pcl::PointCloud<PointType>::Ptr   extractedCloud;
 
-    int ringFlag = 0;
-    int deskewFlag;
-    cv::Mat rangeMat;
+    int ringFlag = 0;                                   // distinguish about lidar hw
+    int deskewFlag = 0;                                 // imu's time is available
+    Eigen::MatrixXf rangeMat;                           // distance based on rowIdx, colIdx
 
-    bool odomDeskewFlag;
+    bool odomDeskewFlag;                                // odometry/imu_incremental is available
+    // translation between starting point and end point in /odometry/imu_incremental
     float odomIncreX;
     float odomIncreY;
     float odomIncreZ;
 
-    lio_sam::msg::CloudInfo cloudInfo;
-    double timeScanCur;
-    double timeScanEnd;
-    std_msgs::msg::Header cloudHeader;
+    lio_sam::msg::CloudInfo cloudInfo;                  // topic data will be published
+    double timeScanCur;                                 // starting time in lidar scan
+    double timeScanEnd;                                 // end time in lidar scan
+    std_msgs::msg::Header cloudHeader;                  // topic header will be published
 
     vector<int> columnIdnCountVec;
 
@@ -85,7 +78,7 @@ public:
     void imuHandler(const sensor_msgs::msg::Imu::SharedPtr imuMsg);
     void odometryHandler(const nav_msgs::msg::Odometry::SharedPtr odometryMsg);
     void cloudHandler(const sensor_msgs::msg::PointCloud2::SharedPtr laserCloudMsg);
-    bool cachePointCloud(const sensor_msgs::msg::PointCloud2::SharedPtr& laserCloudMsg);
+    bool cachePointCloud(const sensor_msgs::msg::PointCloud2::SharedPtr& laserCloudMsg); // analysis lidar msg
     bool deskewInfo();
     void imuDeskewInfo();
     void odomDeskewInfo();

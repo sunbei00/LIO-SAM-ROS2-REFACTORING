@@ -22,12 +22,6 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <nav_msgs/msg/path.hpp>
 
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2_ros/transform_listener.h>
-#include <tf2_ros/transform_broadcaster.h>
-#include <tf2_eigen/tf2_eigen.hpp>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
-
 
 using gtsam::symbol_shorthand::X; // Pose3 (x,y,z,r,p,y)
 using gtsam::symbol_shorthand::V; // Vel   (xdot,ydot,zdot)
@@ -58,7 +52,9 @@ public:
     gtsam::PreintegratedImuMeasurements *imuIntegratorOpt_;
     gtsam::PreintegratedImuMeasurements *imuIntegratorImu_;
 
+    // imuQueOpt (IMU Queue for Optimization)
     std::deque<sensor_msgs::msg::Imu> imuQueOpt;
+    // imuQueImu (IMU Queue for Immediate Processing)
     std::deque<sensor_msgs::msg::Imu> imuQueImu;
 
     gtsam::Pose3 prevPose_;
@@ -81,14 +77,18 @@ public:
 
     int key = 1;
 
+    // IMU coordinate to LiDar coordinate
     gtsam::Pose3 imu2Lidar = gtsam::Pose3(gtsam::Rot3(1, 0, 0, 0), gtsam::Point3(-extTrans.x(), -extTrans.y(), -extTrans.z()));
+    // LiDar coordinate to IMU coordinate
     gtsam::Pose3 lidar2Imu = gtsam::Pose3(gtsam::Rot3(1, 0, 0, 0), gtsam::Point3(extTrans.x(), extTrans.y(), extTrans.z()));
 
     IMUPreintegration(const rclcpp::NodeOptions & options);
     void resetOptimization();
     void resetParams();
+    // lidar odometry from mapOptimization
     void odometryHandler(const nav_msgs::msg::Odometry::SharedPtr odomMsg);
     bool failureDetection(const gtsam::Vector3& velCur, const gtsam::imuBias::ConstantBias& biasCur);
+    // pre-integration
     void imuHandler(const sensor_msgs::msg::Imu::SharedPtr imu_raw);
 };
 

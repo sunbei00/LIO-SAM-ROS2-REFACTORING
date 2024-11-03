@@ -72,6 +72,7 @@ void IMUPreintegration::odometryHandler(const nav_msgs::msg::Odometry::SharedPtr
     if (imuQueOpt.empty())
         return;
 
+    // odometry_incremental from mapOptimization.cpp
     float p_x = odomMsg->pose.pose.position.x;
     float p_y = odomMsg->pose.pose.position.y;
     float p_z = odomMsg->pose.pose.position.z;
@@ -99,7 +100,7 @@ void IMUPreintegration::odometryHandler(const nav_msgs::msg::Odometry::SharedPtr
             else
                 break;
         }
-        // initial pose
+        // initial pose (lidar pose from lidar coordinate to imu coordinate)
         prevPose_ = lidarPose.compose(lidar2Imu);
         gtsam::PriorFactor<gtsam::Pose3> priorPose(X(0), prevPose_, priorPoseNoise);
         graphFactors.add(priorPose);
@@ -107,7 +108,7 @@ void IMUPreintegration::odometryHandler(const nav_msgs::msg::Odometry::SharedPtr
         prevVel_ = gtsam::Vector3(0, 0, 0);
         gtsam::PriorFactor<gtsam::Vector3> priorVel(V(0), prevVel_, priorVelNoise);
         graphFactors.add(priorVel);
-        // initial bias
+        // initial bias (0,0,0)
         prevBias_ = gtsam::imuBias::ConstantBias();
         gtsam::PriorFactor<gtsam::imuBias::ConstantBias> priorBias(B(0), prevBias_, priorBiasNoise);
         graphFactors.add(priorBias);
@@ -216,7 +217,7 @@ void IMUPreintegration::odometryHandler(const nav_msgs::msg::Odometry::SharedPtr
     }
 
 
-    // 2. after optiization, re-propagate imu odometry preintegration
+    // 2. after optimization, re-propagate imu odometry preintegration
     prevStateOdom = prevState_;
     prevBiasOdom  = prevBias_;
     // first pop imu message older than current correction data
@@ -226,7 +227,7 @@ void IMUPreintegration::odometryHandler(const nav_msgs::msg::Odometry::SharedPtr
         lastImuQT = stamp2Sec(imuQueImu.front().header.stamp);
         imuQueImu.pop_front();
     }
-    // repropogate
+    // repropogate (for immediate Integration)
     if (!imuQueImu.empty())
     {
         // reset bias use the newly optimized bias
@@ -291,13 +292,13 @@ void IMUPreintegration::imuHandler(const sensor_msgs::msg::Imu::SharedPtr imu_ra
     // predict odometry
     gtsam::NavState currentState = imuIntegratorImu_->predict(prevStateOdom, prevBiasOdom);
 
-    // publish odometry
+    // publish odometry (odometry/imu_incremental)
     auto odometry = nav_msgs::msg::Odometry();
     odometry.header.stamp = thisImu.header.stamp;
     odometry.header.frame_id = odometryFrame;
     odometry.child_frame_id = "odom_imu";
 
-    // transform imu pose to ldiar
+    // transform imu pose to ldiar (change coordinate)
     gtsam::Pose3 imuPose = gtsam::Pose3(currentState.quaternion(), currentState.position());
     gtsam::Pose3 lidarPose = imuPose.compose(imu2Lidar);
 

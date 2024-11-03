@@ -9,8 +9,8 @@ int main(int argc, char** argv)
     options.use_intra_process_comms(true);
     rclcpp::executors::MultiThreadedExecutor e;
 
-    auto ImuP = std::make_shared<IMUPreintegration>(options);
-    auto TF = std::make_shared<TransformFusion>(options);
+    auto ImuP = std::make_shared<IMUPreintegration>(options.arguments({"--ros-args", "-r", "__node:=ImuPreintegrationNode"}));
+    auto TF = std::make_shared<TransformFusion>(options.arguments({"--ros-args", "-r", "__node:=TransformFusionNode"}));
     e.add_node(ImuP);
     e.add_node(TF);
 

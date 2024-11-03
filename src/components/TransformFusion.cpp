@@ -53,9 +53,11 @@ void TransformFusion::imuOdometryHandler(const nav_msgs::msg::Odometry::SharedPt
 
     imuOdomQueue.push_back(*odomMsg);
 
-    // get latest odometry (at current IMU stamp)
+    // get latest odometry (at current IMU stamp)S
     if (lidarOdomTime == -1)
         return;
+
+    // drop imuOdom(imu_incremental) before lidarOdom Time
     while (!imuOdomQueue.empty())
     {
         if (stamp2Sec(imuOdomQueue.front().header.stamp) <= lidarOdomTime)
@@ -63,6 +65,8 @@ void TransformFusion::imuOdometryHandler(const nav_msgs::msg::Odometry::SharedPt
         else
             break;
     }
+
+    // lidarOdom + imuOdom
     Eigen::Isometry3d imuOdomAffineFront = odom2affine(imuOdomQueue.front());
     Eigen::Isometry3d imuOdomAffineBack = odom2affine(imuOdomQueue.back());
     Eigen::Isometry3d imuOdomAffineIncre = imuOdomAffineFront.inverse() * imuOdomAffineBack;
@@ -71,7 +75,8 @@ void TransformFusion::imuOdometryHandler(const nav_msgs::msg::Odometry::SharedPt
     tf2::Stamped<tf2::Transform> tCur;
     tf2::convert(t, tCur);
 
-    // publish latest odometry
+    // publish latest lidarOdom
+    // publish /odometry/imu : lidarOdom + imuOdom
     nav_msgs::msg::Odometry laserOdometry = imuOdomQueue.back();
     laserOdometry.pose.pose.position.x = t.transform.translation.x;
     laserOdometry.pose.pose.position.y = t.transform.translation.y;
@@ -80,6 +85,7 @@ void TransformFusion::imuOdometryHandler(const nav_msgs::msg::Odometry::SharedPt
     pubImuOdometry->publish(laserOdometry);
 
     // publish tf
+    // publish baselink -> lidarOdom + imuOdom applied lidar2baselink TF
     if(lidarFrame != baselinkFrame)
     {
         try
@@ -99,6 +105,7 @@ void TransformFusion::imuOdometryHandler(const nav_msgs::msg::Odometry::SharedPt
     tf2::convert(tCur, ts);
     ts.child_frame_id = baselinkFrame;
     tfBroadcaster->sendTransform(ts);
+
 
     // publish IMU path
     static nav_msgs::msg::Path imuPath;

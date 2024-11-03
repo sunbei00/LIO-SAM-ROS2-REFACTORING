@@ -63,8 +63,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 10.333512306213379
-        Min Value: -2.8264684677124023
+        Max Value: 17.451337814331055
+        Min Value: -4.193751335144043
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -99,6 +99,8 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: true
+        base_footprint:
+          Value: true
         base_link:
           Value: true
         chassis_link:
@@ -123,6 +125,8 @@ Visualization Manager:
       Tree:
         map:
           odom:
+            base_footprint:
+              {}
             base_link:
               chassis_link:
                 imu_link:
@@ -130,8 +134,8 @@ Visualization Manager:
                     {}
                 navsat_link:
                   {}
-            lidar_link:
-              {}
+              lidar_link:
+                {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -343,7 +347,7 @@ Visualization Manager:
           Scale: 1
           Value: true
         Value: true
-      Enabled: false
+      Enabled: true
       Keep: 100
       Name: Odometry
       Position Tolerance: 0.10000000149011612
@@ -362,9 +366,9 @@ Visualization Manager:
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last
-        Reliability Policy: Reliable
+        Reliability Policy: Best Effort
         Value: /odometry/imu
-      Value: false
+      Value: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -398,6 +402,34 @@ Visualization Manager:
         Value: /lio_sam/localmap
       Use Fixed Frame: true
       Use rainbow: true
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 25; 255; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /lio_sam/mapping/path
       Value: true
   Enabled: true
   Global Options:
@@ -445,25 +477,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 36.10389709472656
+      Distance: 28.297679901123047
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -2.0472097396850586
-        Y: -2.1211957931518555
-        Z: -0.9320328831672668
+        X: 3.985943555831909
+        Y: 1.6064540147781372
+        Z: -1.8068616390228271
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.8397970199584961
+      Pitch: 0.7847970724105835
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz_default_plugins)
-      Yaw: 2.5415799617767334
+      Yaw: 2.026583194732666
     Saved: ~
 Window Geometry:
   Displays:

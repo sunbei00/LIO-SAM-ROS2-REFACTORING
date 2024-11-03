@@ -47,3 +47,11 @@ Eigen::Affine3f trans2Affine3f(float transformIn[])
 {
     return pcl::getTransformation(transformIn[3], transformIn[4], transformIn[5], transformIn[0], transformIn[1], transformIn[2]);
 }
+
+// robot coordinate to map coordinate
+void pointAssociateToMap(PointType const * const pi, PointType * const po, const Eigen::Affine3f& transPointAssociateToMap){
+    po->x = transPointAssociateToMap(0,0) * pi->x + transPointAssociateToMap(0,1) * pi->y + transPointAssociateToMap(0,2) * pi->z + transPointAssociateToMap(0,3);
+    po->y = transPointAssociateToMap(1,0) * pi->x + transPointAssociateToMap(1,1) * pi->y + transPointAssociateToMap(1,2) * pi->z + transPointAssociateToMap(1,3);
+    po->z = transPointAssociateToMap(2,0) * pi->x + transPointAssociateToMap(2,1) * pi->y + transPointAssociateToMap(2,2) * pi->z + transPointAssociateToMap(2,3);
+    po->intensity = pi->intensity;
+}

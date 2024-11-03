@@ -71,7 +71,6 @@ public:
     // gtsam
     NonlinearFactorGraph gtSAMgraph;
     Values initialEstimate;
-    Values optimizedEstimate;
     ISAM2 *isam;
     Values isamCurrentEstimate;
     Eigen::MatrixXd poseCovariance;
@@ -97,37 +96,41 @@ public:
     std::deque<nav_msgs::msg::Odometry> gpsQueue;
     lio_sam::msg::CloudInfo cloudInfo;
 
-    vector<pcl::PointCloud<PointType>::Ptr> cornerCloudKeyFrames;
-    vector<pcl::PointCloud<PointType>::Ptr> surfCloudKeyFrames;
+                                                                   // data exist in lidar frame, so need to call transformPointCloud()
+    vector<pcl::PointCloud<PointType>::Ptr> cornerCloudKeyFrames;  // idx : keyIndex -> data : cornerCloud
+    vector<pcl::PointCloud<PointType>::Ptr> surfCloudKeyFrames;    // idx : keyIndex -> data : surfCloud
 
-    pcl::PointCloud<PointType>::Ptr cloudKeyPoses3D;
-    pcl::PointCloud<PointTypePose>::Ptr cloudKeyPoses6D;
+    pcl::PointCloud<PointType>::Ptr cloudKeyPoses3D;               // 3d keyposes
+    pcl::PointCloud<PointTypePose>::Ptr cloudKeyPoses6D;           // 6d keyposes
     pcl::PointCloud<PointType>::Ptr copy_cloudKeyPoses3D;
     pcl::PointCloud<PointTypePose>::Ptr copy_cloudKeyPoses6D;
 
-    pcl::PointCloud<PointType>::Ptr laserCloudCornerLast; // corner feature set from odoOptimization
-    pcl::PointCloud<PointType>::Ptr laserCloudSurfLast; // surf feature set from odoOptimization
-    pcl::PointCloud<PointType>::Ptr laserCloudCornerLastDS; // downsampled corner feature set from odoOptimization
-    pcl::PointCloud<PointType>::Ptr laserCloudSurfLastDS; // downsampled surf feature set from odoOptimization
+    pcl::PointCloud<PointType>::Ptr laserCloudCornerLast;       // corner feature from FeatureExtraction
+    pcl::PointCloud<PointType>::Ptr laserCloudSurfLast;         // surf feature from FeatureExtraction
+    pcl::PointCloud<PointType>::Ptr laserCloudCornerLastDS;     // downsampled corner feature set from FeatureExtraction
+    int laserCloudCornerLastDSNum = 0;                          // downsampled corner feature's size
+    pcl::PointCloud<PointType>::Ptr laserCloudSurfLastDS;       // downsampled surf feature set from FeatureExtraction
+    int laserCloudSurfLastDSNum = 0;                            // downsampled surf feature's size
 
     pcl::PointCloud<PointType>::Ptr laserCloudOri;
     pcl::PointCloud<PointType>::Ptr coeffSel;
 
-    std::vector<PointType> laserCloudOriCornerVec; // corner point holder for parallel computation
+    std::vector<PointType> laserCloudOriCornerVec;              // corner point holder for parallel computation
     std::vector<PointType> coeffSelCornerVec;
     std::vector<bool> laserCloudOriCornerFlag;
-    std::vector<PointType> laserCloudOriSurfVec; // surf point holder for parallel computation
+    std::vector<PointType> laserCloudOriSurfVec;                // surf point holder for parallel computation
     std::vector<PointType> coeffSelSurfVec;
     std::vector<bool> laserCloudOriSurfFlag;
 
     map<int, pair<pcl::PointCloud<PointType>, pcl::PointCloud<PointType>>> laserCloudMapContainer;
-    pcl::PointCloud<PointType>::Ptr laserCloudCornerFromMap;
-    pcl::PointCloud<PointType>::Ptr laserCloudSurfFromMap;
-    pcl::PointCloud<PointType>::Ptr laserCloudCornerFromMapDS;
-    pcl::PointCloud<PointType>::Ptr laserCloudSurfFromMapDS;
+    pcl::PointCloud<PointType>::Ptr laserCloudCornerFromMap;    // Map is come from nearby
+    pcl::PointCloud<PointType>::Ptr laserCloudSurfFromMap;      // Map is come from nearby
+    pcl::PointCloud<PointType>::Ptr laserCloudCornerFromMapDS;  // downsampled Map is come from laserCloudCornerFromMap
+    pcl::PointCloud<PointType>::Ptr laserCloudSurfFromMapDS;    // downsampled Map is come from laserCloudSurfFromMap
 
-    pcl::KdTreeFLANN<PointType>::Ptr kdtreeCornerFromMap;
-    pcl::KdTreeFLANN<PointType>::Ptr kdtreeSurfFromMap;
+
+    pcl::KdTreeFLANN<PointType>::Ptr kdtreeCornerFromMap;       // KdTree from laserCloudCornerFromMapDS
+    pcl::KdTreeFLANN<PointType>::Ptr kdtreeSurfFromMap;         // kdTree from laserCloudSurfFromMapDS
 
     pcl::KdTreeFLANN<PointType>::Ptr kdtreeSurroundingKeyPoses;
     pcl::KdTreeFLANN<PointType>::Ptr kdtreeHistoryKeyPoses;
@@ -148,11 +151,6 @@ public:
     bool isDegenerate = false;
     Eigen::Matrix<float, 6, 6> matP;
 
-    int laserCloudCornerFromMapDSNum = 0;
-    int laserCloudSurfFromMapDSNum = 0;
-    int laserCloudCornerLastDSNum = 0;
-    int laserCloudSurfLastDSNum = 0;
-
     bool aLoopIsClosed = false;
     map<int, int> loopIndexContainer; // from new to old
     vector<pair<int, int>> loopIndexQueue;
@@ -162,35 +160,32 @@ public:
 
     nav_msgs::msg::Path globalPath;
 
-    Eigen::Affine3f transPointAssociateToMap;
     Eigen::Affine3f incrementalOdometryAffineFront;
     Eigen::Affine3f incrementalOdometryAffineBack;
 
     std::unique_ptr<tf2_ros::TransformBroadcaster> br;
 
 
-    // MapOptimization.cpp
+    // MOInitializer.cpp
     MapOptimization(const rclcpp::NodeOptions& options);
     void allocateMemory();
-    pcl::PointCloud<PointType>::Ptr transformPointCloud(pcl::PointCloud<PointType>::Ptr cloudIn, PointTypePose* transformIn);
 
+    // MapOptimization.cpp
+    pcl::PointCloud<PointType>::Ptr transformPointCloud(pcl::PointCloud<PointType>::Ptr cloudIn, PointTypePose* transformIn);
     void laserCloudInfoHandler(const lio_sam::msg::CloudInfo::SharedPtr msgIn);
     void gpsHandler(const nav_msgs::msg::Odometry::SharedPtr gpsMsg);
-    void pointAssociateToMap(PointType const * const pi, PointType * const po);
     void updateInitialGuess();
     void extractForLoopClosure();
     void extractNearby();
     void extractCloud(pcl::PointCloud<PointType>::Ptr cloudToExtract);
     void extractSurroundingKeyFrames();
     void downsampleCurrentScan();
-    void updatePointAssociateToMap();
     void cornerOptimization();
     void surfOptimization();
     void combineOptimizationCoeffs();
     bool LMOptimization(int iterCount);
     void scan2MapOptimization();
     void transformUpdate();
-    float constraintTransformation(float value, float limit);
     bool saveFrame();
     void addOdomFactor();
     void addGPSFactor();
@@ -198,8 +193,11 @@ public:
     void saveKeyFramesAndFactor();
     void correctPoses();
     void updatePath(const PointTypePose& pose_in);
+
+    // MOPublish.cpp
     void publishOdometry();
     void publishFrames();
+    bool saveMap(std::string destination = "", float resolution = 0.0f);
 
 
     // MOLoopClosure.cpp

@@ -18,5 +18,6 @@ float pointDistance(PointType p1, PointType p2);
 PointTypePose trans2PointTypePose(float transformIn[]);
 Eigen::Affine3f pclPointToAffine3f(PointTypePose thisPoint);
 Eigen::Affine3f trans2Affine3f(float transformIn[]);
+void pointAssociateToMap(PointType const * const pi, PointType * const po, const Eigen::Affine3f& transPointAssociateToMap);
 
 #endif //BUILD_PCLUTILS_H
