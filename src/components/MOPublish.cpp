@@ -231,6 +231,9 @@ bool MapOptimization::saveMap(std::string destination, float resolution){
         return ret;
     };
 
+    std::function<bool()> saveGPS = [&]() -> bool{
+        return 0 == pcl::io::savePCDFileBinary(saveMapDirectory + "/gps.pcd", *gpsKeyPoses2D);
+    };
 
     std::lock_guard<std::mutex> lock(mtx);
     bool ret = true;
@@ -238,11 +241,8 @@ bool MapOptimization::saveMap(std::string destination, float resolution){
         ret = ret && saveDefault();
     if(keyframeCloud)
         ret = ret && saveKeyframeCloud();
-
-
-
-
-
+    if(keyframeGPS)
+        ret = ret && saveGPS();
 
     cout << "****************************************************" << endl;
     cout << "Saving map to pcd files completed\n" << endl;

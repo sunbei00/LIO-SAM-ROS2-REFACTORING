@@ -56,6 +56,7 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <sensor_msgs/msg/nav_sat_fix.hpp>
 #include <nav_msgs/msg/path.hpp>
 
 using namespace gtsam;
@@ -92,6 +93,7 @@ public:
     rclcpp::Subscription<lio_sam::msg::CloudInfo>::SharedPtr subCloud;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr subGPS;
     rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr subLoop;
+    rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr subNavFix;
 
     std::deque<nav_msgs::msg::Odometry> gpsQueue;
     lio_sam::msg::CloudInfo cloudInfo;
@@ -104,6 +106,9 @@ public:
     pcl::PointCloud<PointTypePose>::Ptr cloudKeyPoses6D;           // 6d keyposes
     pcl::PointCloud<PointType>::Ptr copy_cloudKeyPoses3D;
     pcl::PointCloud<PointTypePose>::Ptr copy_cloudKeyPoses6D;
+
+    PointTypeXYI currGPS = {-1, -1, -1};           // east north
+    pcl::PointCloud<PointTypeXYI>::Ptr gpsKeyPoses2D;                 // gpsKeyPose (UTM Coordinate), idx : keyIndex -> data {east, north}
 
     pcl::PointCloud<PointType>::Ptr laserCloudCornerLast;       // corner feature from FeatureExtraction
     pcl::PointCloud<PointType>::Ptr laserCloudSurfLast;         // surf feature from FeatureExtraction
@@ -171,9 +176,11 @@ public:
     void allocateMemory();
 
     // MapOptimization.cpp
+    void navSatFixCallback(const sensor_msgs::msg::NavSatFix::SharedPtr msg);
+    void gpsHandler(const nav_msgs::msg::Odometry::SharedPtr gpsMsg);
+
     pcl::PointCloud<PointType>::Ptr transformPointCloud(pcl::PointCloud<PointType>::Ptr cloudIn, PointTypePose* transformIn);
     void laserCloudInfoHandler(const lio_sam::msg::CloudInfo::SharedPtr msgIn);
-    void gpsHandler(const nav_msgs::msg::Odometry::SharedPtr gpsMsg);
     void updateInitialGuess();
     void extractForLoopClosure();
     void extractNearby();

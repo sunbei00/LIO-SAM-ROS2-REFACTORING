@@ -1,5 +1,6 @@
 #include "MapOptimization.h"
 #include <opencv2/opencv.hpp>
+#include "utils/gpsUtils.h"
 
 
 pcl::PointCloud<PointType>::Ptr MapOptimization::transformPointCloud(pcl::PointCloud<PointType>::Ptr cloudIn, PointTypePose* transformIn)
@@ -27,6 +28,15 @@ pcl::PointCloud<PointType>::Ptr MapOptimization::transformPointCloud(pcl::PointC
 void MapOptimization::gpsHandler(const nav_msgs::msg::Odometry::SharedPtr gpsMsg)
 {
     gpsQueue.push_back(*gpsMsg);
+}
+
+void MapOptimization::navSatFixCallback(const sensor_msgs::msg::NavSatFix::SharedPtr msg){
+    double lat = msg->latitude;
+    double lon = msg->longitude;
+    auto [east, north] = latlon_to_utm(lat, lon);
+
+    currGPS.x = east;
+    currGPS.y = north;
 }
 
 void MapOptimization::laserCloudInfoHandler(const lio_sam::msg::CloudInfo::SharedPtr msgIn)
@@ -807,7 +817,10 @@ void MapOptimization::saveKeyFramesAndFactor()
     thisPose3D.y = latestEstimate.translation().y();
     thisPose3D.z = latestEstimate.translation().z();
     thisPose3D.intensity = cloudKeyPoses3D->size(); // this can be used as index
+    currGPS.intensity = cloudKeyPoses3D->size();
+
     cloudKeyPoses3D->push_back(thisPose3D);
+    gpsKeyPoses2D->push_back(currGPS);
 
     thisPose6D.x = thisPose3D.x;
     thisPose6D.y = thisPose3D.y;

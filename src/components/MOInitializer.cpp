@@ -25,6 +25,10 @@ MapOptimization::MapOptimization(const rclcpp::NodeOptions & options) : ParamSer
     subLoop = create_subscription<std_msgs::msg::Float64MultiArray>(
             "lio_loop/loop_closure_detection", qos,
             std::bind(&MapOptimization::loopInfoHandler, this, std::placeholders::_1));
+    subNavFix = this->create_subscription<sensor_msgs::msg::NavSatFix>(
+            navFixTopic, 10, std::bind(&MapOptimization::navSatFixCallback, this, std::placeholders::_1)
+    );
+
 
     auto saveMapService = [this](const std::shared_ptr<rmw_request_id_t> request_header, const std::shared_ptr<lio_sam::srv::SaveMap::Request> req, std::shared_ptr<lio_sam::srv::SaveMap::Response> res) -> void {
         (void)request_header;
@@ -89,4 +93,6 @@ void MapOptimization::allocateMemory()
     }
 
     matP.setZero();
+
+    gpsKeyPoses2D.reset(new pcl::PointCloud<PointTypeXYI>);
 }
