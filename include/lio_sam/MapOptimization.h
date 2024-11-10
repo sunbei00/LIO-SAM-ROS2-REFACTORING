@@ -154,7 +154,6 @@ public:
     std::mutex mtxLoopInfo;
 
     bool isDegenerate = false;
-    Eigen::Matrix<float, 6, 6> matP;
 
     bool aLoopIsClosed = false;
     map<int, int> loopIndexContainer; // from new to old

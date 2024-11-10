@@ -88,11 +88,8 @@ void MapOptimization::allocateMemory()
     kdtreeCornerFromMap.reset(new pcl::KdTreeFLANN<PointType>());
     kdtreeSurfFromMap.reset(new pcl::KdTreeFLANN<PointType>());
 
-    for (int i = 0; i < 6; ++i){
+    for (int i = 0; i < 6; ++i)
         transformTobeMapped[i] = 0;
-    }
-
-    matP.setZero();
 
     gpsKeyPoses2D.reset(new pcl::PointCloud<PointTypeXYI>);
 }
