@@ -1,4 +1,5 @@
 #include "MapOptimization.h"
+#include "utils/gtsamUtils.h"
 
 
 void MapOptimization::loopClosureThread()

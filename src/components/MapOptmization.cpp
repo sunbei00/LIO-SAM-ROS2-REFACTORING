@@ -1,6 +1,7 @@
 #include "MapOptimization.h"
 #include <opencv2/opencv.hpp>
 #include "utils/gpsUtils.h"
+#include "utils/gtsamUtils.h"
 
 
 pcl::PointCloud<PointType>::Ptr MapOptimization::transformPointCloud(pcl::PointCloud<PointType>::Ptr cloudIn, PointTypePose* transformIn)
@@ -137,20 +138,6 @@ void MapOptimization::updateInitialGuess()
     }
 }
 
-void MapOptimization::extractForLoopClosure()
-{
-    pcl::PointCloud<PointType>::Ptr cloudToExtract(new pcl::PointCloud<PointType>());
-    int numPoses = cloudKeyPoses3D->size();
-    for (int i = numPoses-1; i >= 0; --i)
-    {
-        if ((int)cloudToExtract->size() <= surroundingKeyframeSize)
-            cloudToExtract->push_back(cloudKeyPoses3D->points[i]);
-        else
-            break;
-    }
-
-    extractCloud(cloudToExtract);
-}
 
 void MapOptimization::extractNearby()
 {
@@ -234,13 +221,6 @@ void MapOptimization::extractSurroundingKeyFrames()
 {
     if (cloudKeyPoses3D->points.empty() == true)
         return;
-
-    // if (loopClosureEnableFlag == true)
-    // {
-    //     extractForLoopClosure();
-    // } else {
-    //     extractNearby();
-    // }
 
     extractNearby();
 }

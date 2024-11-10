@@ -13,7 +13,6 @@
 #include "utils/pclUtils.h"
 #include "utils/utils.h"
 #include "utils/pclType.h"
-#include "utils/gtsamUtils.h"
 
 #include "lio_sam/msg/cloud_info.hpp"
 #include "lio_sam/srv/save_map.hpp"
@@ -54,10 +53,10 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 #include <nav_msgs/msg/odometry.hpp>
+#include <nav_msgs/msg/path.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
-#include <nav_msgs/msg/path.hpp>
 
 using namespace gtsam;
 
@@ -204,7 +203,6 @@ public: // methods
     pcl::PointCloud<PointType>::Ptr transformPointCloud(pcl::PointCloud<PointType>::Ptr cloudIn, PointTypePose* transformIn);
     void laserCloudInfoHandler(const lio_sam::msg::CloudInfo::SharedPtr msgIn);
     void updateInitialGuess();
-    void extractForLoopClosure();
     void extractNearby();
     void extractCloud(pcl::PointCloud<PointType>::Ptr cloudToExtract);
     void extractSurroundingKeyFrames();
