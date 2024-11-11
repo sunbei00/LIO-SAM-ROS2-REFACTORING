@@ -1,6 +1,8 @@
 #include "MapOptimization.h"
 #include <sys/stat.h>
 
+
+
 void MapOptimization::publishOdometry()
 {
     // Publish odometry for ROS (global)
@@ -137,7 +139,6 @@ void MapOptimization::updatePath(const PointTypePose& pose_in)
 }
 
 
-
 bool MapOptimization::saveMap(std::string destination, float resolution){
     struct stat info;
 
@@ -156,8 +157,10 @@ bool MapOptimization::saveMap(std::string destination, float resolution){
 
     std::function<bool()> saveDefault = [&]() -> bool {
         // save key frame transformations
+
         pcl::io::savePCDFileBinary(saveMapDirectory + "/trajectory.pcd", *cloudKeyPoses3D);
         pcl::io::savePCDFileBinary(saveMapDirectory + "/transformations.pcd", *cloudKeyPoses6D);
+
 
         // extract global point cloud map
         pcl::PointCloud<PointType>::Ptr globalCornerCloud(new pcl::PointCloud<PointType>());
@@ -196,35 +199,43 @@ bool MapOptimization::saveMap(std::string destination, float resolution){
         *globalMapCloud += *globalCornerCloud;
         *globalMapCloud += *globalSurfCloud;
         int ret = pcl::io::savePCDFileBinary(saveMapDirectory + "/GlobalMap.pcd", *globalMapCloud);
-        downSizeFilterCorner.setLeafSize(mappingCornerLeafSize, mappingCornerLeafSize, mappingCornerLeafSize);
-        downSizeFilterSurf.setLeafSize(mappingSurfLeafSize, mappingSurfLeafSize, mappingSurfLeafSize);
-
         return ret == 0;
     };
 
-    std::function<bool()> saveKeyframeCloud = [&]() -> bool{
-        // save key frame's point cloud
+    std::function<bool()> saveKeyframeCloud = [&]() -> bool {
+        // Save key frame's point cloud
         string kfpcName = "keyframePointCloud/";
-        if(saveMapDirectory.back() != '/')
+        if (saveMapDirectory.back() != '/')
             kfpcName = "/keyframePointCloud/";
         string keyframePointCloudDir = saveMapDirectory + kfpcName;
+
+        // Remove existing directory and create a new one
         if (stat(keyframePointCloudDir.c_str(), &info) == 0)
             system((std::string("exec rm -r ") + keyframePointCloudDir).c_str());
         system((std::string("mkdir -p ") + keyframePointCloudDir).c_str());
 
-
         bool ret = true;
+
+        auto removeNaNPoints = [](pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud) {
+            std::vector<int> indices;
+            pcl::removeNaNFromPointCloud(*cloud, *cloud, indices);
+        };
+
         for (size_t i = 0; i < cornerCloudKeyFrames.size(); ++i) {
+            removeNaNPoints(cornerCloudKeyFrames[i]);
+
             std::stringstream ss;
             ss << keyframePointCloudDir << "corner_" << i << ".pcd";
-            if(pcl::io::savePCDFile(ss.str(), *cornerCloudKeyFrames[i]) != 0)
+            if (pcl::io::savePCDFile(ss.str(), *cornerCloudKeyFrames[i]) != 0)
                 ret = false;
         }
 
         for (size_t i = 0; i < surfCloudKeyFrames.size(); ++i) {
+            removeNaNPoints(surfCloudKeyFrames[i]);
+
             std::stringstream ss;
-            ss << keyframePointCloudDir << "surf_"<< i << ".pcd";
-            if(pcl::io::savePCDFile(ss.str(), *surfCloudKeyFrames[i]) != 0)
+            ss << keyframePointCloudDir << "surf_" << i << ".pcd";
+            if (pcl::io::savePCDFile(ss.str(), *surfCloudKeyFrames[i]) != 0)
                 ret = false;
         }
 

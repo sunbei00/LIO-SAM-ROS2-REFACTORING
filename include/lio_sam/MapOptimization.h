@@ -29,7 +29,6 @@
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Symbol.h>
-
 #include <gtsam/nonlinear/ISAM2.h>
 
 
@@ -105,7 +104,6 @@ public: // data
     vector<pcl::PointCloud<PointType>::Ptr> surfCloudKeyFrames;    // idx : keyIndex -> data : surfCloud
     // data exist in lidar frame, so need to call transformPointCloud()
 
-
     // keyPose
     pcl::PointCloud<PointType>::Ptr cloudKeyPoses3D;               // 3d keyposes
     pcl::PointCloud<PointTypePose>::Ptr cloudKeyPoses6D;           // 6d keyposes
@@ -116,8 +114,8 @@ public: // data
     pcl::PointCloud<PointType>::Ptr laserCloudCornerLast;       // corner feature from FeatureExtraction
     pcl::PointCloud<PointType>::Ptr laserCloudSurfLast;         // surf feature from FeatureExtraction
     pcl::PointCloud<PointType>::Ptr laserCloudCornerLastDS;     // downsampled corner feature set from FeatureExtraction
-    int laserCloudCornerLastDSNum = 0;                          // downsampled corner feature's size
     pcl::PointCloud<PointType>::Ptr laserCloudSurfLastDS;       // downsampled surf feature set from FeatureExtraction
+    int laserCloudCornerLastDSNum = 0;                          // downsampled corner feature's size
     int laserCloudSurfLastDSNum = 0;                            // downsampled surf feature's size
 
     // data using at scan2MapOptimization function
