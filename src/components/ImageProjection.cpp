@@ -282,9 +282,11 @@ void ImageProjection::imuDeskewInfo()
         sensor_msgs::msg::Imu thisImuMsg = imuQueue[i];
         double currentImuTime = stamp2Sec(thisImuMsg.header.stamp);
 
+
         // get roll, pitch, and yaw estimation for this scan
-        if (currentImuTime <= timeScanCur)
-            imuRPY2rosRPY(&thisImuMsg, &cloudInfo.imu_roll_init, &cloudInfo.imu_pitch_init, &cloudInfo.imu_yaw_init);
+        if(useImuHeadingInitialization) // true : 9Axis-IMU, false : 6Axis-IMU
+            if (currentImuTime <= timeScanCur)
+                imuRPY2rosRPY(&thisImuMsg, &cloudInfo.imu_roll_init, &cloudInfo.imu_pitch_init, &cloudInfo.imu_yaw_init);
         if (currentImuTime > timeScanEnd + 0.01)
             break;
 
