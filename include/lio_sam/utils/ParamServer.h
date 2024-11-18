@@ -300,7 +300,7 @@ public:
 
             if (sqrt(q_final.x()*q_final.x() + q_final.y()*q_final.y() + q_final.z()*q_final.z() + q_final.w()*q_final.w()) < 0.1)
             {
-                RCLCPP_ERROR(get_logger(), "Invalid quaternion, please use a 9-axis IMU!");
+                RCLCPP_ERROR(get_logger(), "Invalid quaternion, please use a 9-axis IMU!, or set useImuHeadingInitialization false in config");
                 rclcpp::shutdown();
             }
         }
