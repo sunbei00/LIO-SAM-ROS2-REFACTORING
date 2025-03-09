@@ -22,6 +22,7 @@ public:
     string odomTopic;
     string gpsTopic;
     string navFixTopic;
+    string gpsHeadingTopic;
 
     //Frames
     string lidarFrame;
@@ -31,6 +32,7 @@ public:
 
     // GPS Settings
     bool useImuHeadingInitialization;
+    bool useGPSHeadingInitialization;
     bool useGpsElevation;
     float gpsCovThreshold;
     float poseCovThreshold;
@@ -117,6 +119,9 @@ public:
         get_parameter("gpsTopic", gpsTopic);
         declare_parameter("navFixTopic", "fix");
         get_parameter("navFixTopic", navFixTopic);
+        declare_parameter("gpsHeadingTopic", "/heading");
+        get_parameter("gpsHeadingTopic", gpsHeadingTopic);
+
 
         declare_parameter("lidarFrame", "laser_data_frame");
         get_parameter("lidarFrame", lidarFrame);
@@ -127,6 +132,8 @@ public:
         declare_parameter("mapFrame", "map");
         get_parameter("mapFrame", mapFrame);
 
+        declare_parameter("useGPSHeadingInitialization", false);
+        get_parameter("useGPSHeadingInitialization", useGPSHeadingInitialization);
         declare_parameter("useImuHeadingInitialization", false);
         get_parameter("useImuHeadingInitialization", useImuHeadingInitialization);
         declare_parameter("useGpsElevation", false);

@@ -56,6 +56,8 @@
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
+#include "geometry_msgs/msg/quaternion_stamped.hpp"
+
 
 using namespace gtsam;
 
@@ -92,6 +94,7 @@ public: // ros2
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr subGPS;
     rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr subLoop;
     rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr subNavFix;
+    rclcpp::Subscription<geometry_msgs::msg::QuaternionStamped>::SharedPtr subHeading;
 
 public: // ros2 topic from /lio_sam/featureExtraction node
     lio_sam::msg::CloudInfo cloudInfo;
@@ -184,10 +187,14 @@ public: // data
     // broadcast TF for debugging
     std::unique_ptr<tf2_ros::TransformBroadcaster> br;
 
-    // TO DO : gps
+    // gps(navfix)
     PointTypeXYI currGPS = {-1, -1, -1};           // east north
-    pcl::PointCloud<PointTypeXYI>::Ptr gpsKeyPoses2D;            // gpsKeyPose (UTM Coordinate), idx : keyIndex -> data {east, north}
+    pcl::PointCloud<PointTypeXYI>::Ptr gpsKeyPoses2D;            // gpsKeyPose (UTM Coordinate), idx : keyIndex -> data {east, north, intensity}
 
+    // useGPSHeadingInitialization
+    bool isSubHeading = false;
+    bool isGPSHeadingInitialized = false;
+    double gpsHeadingYaw = 0.0;
 
 public: // methods
     // MOInitializer.cpp
@@ -197,6 +204,7 @@ public: // methods
     // MapOptimization.cpp
     void navSatFixCallback(const sensor_msgs::msg::NavSatFix::SharedPtr msg);
     void gpsHandler(const nav_msgs::msg::Odometry::SharedPtr gpsMsg);
+    void headingCallback(const geometry_msgs::msg::QuaternionStamped::SharedPtr msg);
 
     pcl::PointCloud<PointType>::Ptr transformPointCloud(pcl::PointCloud<PointType>::Ptr cloudIn, PointTypePose* transformIn);
     void laserCloudInfoHandler(const lio_sam::msg::CloudInfo::SharedPtr msgIn);

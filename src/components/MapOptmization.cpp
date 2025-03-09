@@ -3,6 +3,42 @@
 #include "utils/gpsUtils.h"
 #include "utils/gtsamUtils.h"
 
+void MapOptimization::headingCallback(const geometry_msgs::msg::QuaternionStamped::SharedPtr msg)
+{
+//    RCLCPP_INFO(this->get_logger(), "Received QuaternionStamped message:");
+//    RCLCPP_INFO(this->get_logger(), "Header: [frame_id: '%s', stamp: %s]", msg->header.frame_id.c_str(), msg->header.stamp.sec);
+//    RCLCPP_INFO(this-get_logger(), "Quaternion: [x: %.2f, y: %.2f, z: %.2f, w: %.2f]", msg->quaternion.x, msg->quaternion.y, msg->quaternion.z, msg->quaternion.w);
+
+    double qx = msg->quaternion.x;
+    double qy = msg->quaternion.y;
+    double qz = msg->quaternion.z;
+    double qw = msg->quaternion.w;
+
+    if(qz > 1.0 - 1e-5)
+        return;
+
+    gpsHeadingYaw = atan2(2.0 * (qw * qz + qx * qy), 1.0 - 2.0 * (qy * qy + qz * qz));
+    isSubHeading = true;
+
+
+
+    // yaw 출력
+    //RCLCPP_INFO(this->get_logger(), "Yaw (radians): %.3f", yaw);
+}
+
+void MapOptimization::gpsHandler(const nav_msgs::msg::Odometry::SharedPtr gpsMsg)
+{
+    gpsQueue.push_back(*gpsMsg);
+}
+
+void MapOptimization::navSatFixCallback(const sensor_msgs::msg::NavSatFix::SharedPtr msg){
+    double lat = msg->latitude;
+    double lon = msg->longitude;
+    auto [east, north] = latlon_to_utm(lat, lon);
+
+    currGPS.x = east;
+    currGPS.y = north;
+}
 
 pcl::PointCloud<PointType>::Ptr MapOptimization::transformPointCloud(pcl::PointCloud<PointType>::Ptr cloudIn, PointTypePose* transformIn)
 {
@@ -26,20 +62,6 @@ pcl::PointCloud<PointType>::Ptr MapOptimization::transformPointCloud(pcl::PointC
 }
 
 
-void MapOptimization::gpsHandler(const nav_msgs::msg::Odometry::SharedPtr gpsMsg)
-{
-    gpsQueue.push_back(*gpsMsg);
-}
-
-void MapOptimization::navSatFixCallback(const sensor_msgs::msg::NavSatFix::SharedPtr msg){
-    double lat = msg->latitude;
-    double lon = msg->longitude;
-    auto [east, north] = latlon_to_utm(lat, lon);
-
-    currGPS.x = east;
-    currGPS.y = north;
-}
-
 void MapOptimization::laserCloudInfoHandler(const lio_sam::msg::CloudInfo::SharedPtr msgIn)
 {
     // extract time stamp
@@ -59,6 +81,10 @@ void MapOptimization::laserCloudInfoHandler(const lio_sam::msg::CloudInfo::Share
         timeLastProcessing = timeLaserInfoCur;
 
         updateInitialGuess();
+
+        if(useGPSHeadingInitialization )
+            if(!isGPSHeadingInitialized)
+                return;
 
         extractSurroundingKeyFrames();
 
@@ -82,6 +108,7 @@ void MapOptimization::updateInitialGuess()
     incrementalOdometryAffineFront = trans2Affine3f(transformTobeMapped);
 
     static Eigen::Affine3f lastImuTransformation;
+
     // initialization
     if (cloudKeyPoses3D->points.empty())
     {
@@ -91,8 +118,14 @@ void MapOptimization::updateInitialGuess()
 
         if (!useImuHeadingInitialization)
             transformTobeMapped[2] = 0;
+        if(useGPSHeadingInitialization && isSubHeading){
+            transformTobeMapped[2] = gpsHeadingYaw;
+            isGPSHeadingInitialized = true;
+        }
+        if(useGPSHeadingInitialization && !isSubHeading)
+            RCLCPP_INFO(rclcpp::get_logger("MapOptimization"), "useGPSHeadingInitialization is true. but it can't subscribe HeadingTopic");
 
-        lastImuTransformation = pcl::getTransformation(0, 0, 0, cloudInfo.imu_roll_init, cloudInfo.imu_pitch_init, cloudInfo.imu_yaw_init); // save imu before return;
+        lastImuTransformation = pcl::getTransformation(transformTobeMapped[3], transformTobeMapped[4], transformTobeMapped[5], transformTobeMapped[0], transformTobeMapped[1], transformTobeMapped[2]); // save imu before return;
         return;
     }
 
