@@ -191,11 +191,6 @@ public: // data
     PointTypeXYI currGPS = {-1, -1, -1};           // east north
     pcl::PointCloud<PointTypeXYI>::Ptr gpsKeyPoses2D;            // gpsKeyPose (UTM Coordinate), idx : keyIndex -> data {east, north, intensity}
 
-    // useGPSHeadingInitialization
-    bool isSubHeading = false;
-    bool isGPSHeadingInitialized = false;
-    double gpsHeadingYaw = 0.0;
-
 public: // methods
     // MOInitializer.cpp
     MapOptimization(const rclcpp::NodeOptions& options);
@@ -204,7 +199,6 @@ public: // methods
     // MapOptimization.cpp
     void navSatFixCallback(const sensor_msgs::msg::NavSatFix::SharedPtr msg);
     void gpsHandler(const nav_msgs::msg::Odometry::SharedPtr gpsMsg);
-    void headingCallback(const geometry_msgs::msg::QuaternionStamped::SharedPtr msg);
 
     pcl::PointCloud<PointType>::Ptr transformPointCloud(pcl::PointCloud<PointType>::Ptr cloudIn, PointTypePose* transformIn);
     void laserCloudInfoHandler(const lio_sam::msg::CloudInfo::SharedPtr msgIn);
