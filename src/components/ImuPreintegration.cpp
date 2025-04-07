@@ -28,6 +28,7 @@ IMUPreintegration::IMUPreintegration(const rclcpp::NodeOptions & options) : Para
     p->accelerometerCovariance  = gtsam::Matrix33::Identity(3,3) * pow(imuAccNoise, 2); // acc white noise in continuous
     p->gyroscopeCovariance      = gtsam::Matrix33::Identity(3,3) * pow(imuGyrNoise, 2); // gyro white noise in continuous
     p->integrationCovariance    = gtsam::Matrix33::Identity(3,3) * pow(1e-4, 2); // error committed in integrating position from velocities
+    p->use2ndOrderCoriolis = true;
     gtsam::imuBias::ConstantBias prior_imu_bias((gtsam::Vector(6) << imuPriorAcc[0], imuPriorAcc[1], imuPriorAcc[2], imuPriorGyr[0], imuPriorGyr[1], imuPriorGyr[2]).finished());
 
     priorPoseNoise  = gtsam::noiseModel::Diagonal::Sigmas((gtsam::Vector(6) << 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2).finished()); // rad,rad,rad,m, m, m
@@ -108,6 +109,7 @@ void IMUPreintegration::odometryHandler(const nav_msgs::msg::Odometry::SharedPtr
         prevVel_ = gtsam::Vector3(0, 0, 0);
         gtsam::PriorFactor<gtsam::Vector3> priorVel(V(0), prevVel_, priorVelNoise);
         graphFactors.add(priorVel);
+        // initial bias (0,0,0)
         prevBias_ = gtsam::imuBias::ConstantBias((gtsam::Vector(6) << imuPriorAcc[0], imuPriorAcc[1], imuPriorAcc[2], imuPriorGyr[0], imuPriorGyr[1], imuPriorGyr[2]).finished());
         gtsam::PriorFactor<gtsam::imuBias::ConstantBias> priorBias(B(0), prevBias_, priorBiasNoise);
         graphFactors.add(priorBias);
@@ -198,6 +200,7 @@ void IMUPreintegration::odometryHandler(const nav_msgs::msg::Odometry::SharedPtr
     graphValues.insert(B(key), prevBias_);
     // optimize
     optimizer.update(graphFactors, graphValues);
+    optimizer.update();
     optimizer.update();
     graphFactors.resize(0);
     graphValues.clear();
