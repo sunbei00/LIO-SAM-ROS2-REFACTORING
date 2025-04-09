@@ -89,20 +89,22 @@ void MapOptimization::updateInitialGuess()
     // initialization
     if (cloudKeyPoses3D->points.empty())
     {
-        transformTobeMapped[0] = cloudInfo.imu_roll_init;
-        transformTobeMapped[1] = cloudInfo.imu_pitch_init;
-        transformTobeMapped[2] = cloudInfo.imu_yaw_init;
 
-        if (!useImuHeadingInitialization)
-            transformTobeMapped[2] = 0;
-        // if(useGPSHeadingInitialization && isSubHeading){
-        //     transformTobeMapped[2] = gpsHeadingYaw;
-        //     isGPSHeadingInitialized = true;
-        // }
-        // if(useGPSHeadingInitialization && !isSubHeading)
-        //     RCLCPP_INFO(rclcpp::get_logger("MapOptimization"), "useGPSHeadingInitialization is true. but it can't subscribe HeadingTopic");
+        if (imuType == 8 || imuType == 9) {
+            transformTobeMapped[0] = cloudInfo.imu_roll_init;
+            transformTobeMapped[1] = cloudInfo.imu_pitch_init;
+            if (imuType == 9)
+                transformTobeMapped[2] = cloudInfo.imu_yaw_init;
+            else
+                transformTobeMapped[2] = 0.0;
+        }else
+        {
+            transformTobeMapped[0] = 0.0;
+            transformTobeMapped[1] = 0.0;
+            transformTobeMapped[2] = 0.0;
+        }
 
-        lastImuTransformation = pcl::getTransformation(transformTobeMapped[3], transformTobeMapped[4], transformTobeMapped[5], transformTobeMapped[0], transformTobeMapped[1], transformTobeMapped[2]); // save imu before return;
+        lastImuTransformation = pcl::getTransformation(transformTobeMapped[3],transformTobeMapped[4],transformTobeMapped[5], transformTobeMapped[0], transformTobeMapped[1], transformTobeMapped[2]); // save imu before return;
         return;
     }
 
@@ -127,13 +129,14 @@ void MapOptimization::updateInitialGuess()
 
             lastImuPreTransformation = transBack;
 
-            lastImuTransformation = pcl::getTransformation(0, 0, 0, cloudInfo.imu_roll_init, cloudInfo.imu_pitch_init, cloudInfo.imu_yaw_init); // save imu before return;
+            if (imuType == 8 || imuType == 9)
+                lastImuTransformation = pcl::getTransformation(0, 0, 0, cloudInfo.imu_roll_init, cloudInfo.imu_pitch_init, cloudInfo.imu_yaw_init); // save imu before return;
             return;
         }
     }
 
     // use imu incremental estimation for pose guess (only rotation)
-    if (cloudInfo.imu_available == true && useImuHeadingInitialization) // useImuHeadingInitialization - true : 9Axis-IMU, false : 6Axis-IMU
+    if (cloudInfo.imu_available == true && imuType == 8 || imuType == 9 )
     {
         Eigen::Affine3f transBack = pcl::getTransformation(0, 0, 0, cloudInfo.imu_roll_init, cloudInfo.imu_pitch_init, cloudInfo.imu_yaw_init);
         Eigen::Affine3f transIncre = lastImuTransformation.inverse() * transBack;
@@ -589,7 +592,7 @@ void MapOptimization::transformUpdate()
 {
     if (cloudInfo.imu_available == true)
     {
-        if (std::abs(cloudInfo.imu_pitch_init) < 1.4 && useImuHeadingInitialization) // // useImuHeadingInitialization - true : 9Axis-IMU, false : 6Axis-IMU
+        if (std::abs(cloudInfo.imu_pitch_init) < 1.4 && useImuRPYWeight)
         {
             double imuWeight = imuRPYWeight;
             tf2::Quaternion imuQuaternion;

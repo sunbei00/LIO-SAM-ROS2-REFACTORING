@@ -1,14 +1,18 @@
 /**:
   ros__parameters:
 
+    # enable test code
+    testCode1: false # reward about lin_accel by gravity | condition : imuType >= 8
+    testCode2: false # not use RPY at  publishOdom | condition : useIMURPYWeight
+    testCode3: false # use RPY imuWeight at publishOdom  | condition : useIMURPYWeight and testCode2
+
+
     # Topics
     pointCloudTopic: "/points_modified"          # Point cloud data
     imuTopic: "/imu_raw"                        # IMU data
     odomTopic: "odometry/imu"                    # IMU pre-preintegration odometry, same frequency as IMU
     gpsTopic: "odometry/gpsz"                    # GPS odometry topic from navsat, see module_navsat.launch file
     navFixTopic: "/fix"
-    gpsHeadingTopic: "/heading"                    # it is used to initialize pose(yaw),
-    # if useGPSHeadingInitialization is true
 
     # Frames
     lidarFrame: "lidar_link"
@@ -16,11 +20,7 @@
     odometryFrame: "odom"
     mapFrame: "map"
 
-
-
     # GPS Settings
-    useImuHeadingInitialization: false            # if using 9Axis-IMU, set to "true"
-    # if using 6Axis-IMU, set to "false"
     useGpsElevation: false                       # if GPS elevation is bad, set to "false"
     gpsCovThreshold: 2.0                         # m^2, threshold for using GPS data
     poseCovThreshold: 25.0                       # m^2, threshold for using GPS data
@@ -38,7 +38,7 @@
     sensor: ouster                            # lidar sensor type, 'velodyne' or 'ouster' or 'livox'
     N_SCAN: 128                                  # number of lidar channel (i.e., Velodyne/Ouster: 16, 32, 64, 128, Livox Horizon: 6)
     Horizon_SCAN: 1024                          # lidar horizontal resolution (Velodyne:1800, Ouster:512,1024,2048, Livox Horizon: 4000)
-    downsampleRate: 4                           # default: 1. Downsample your data if too many points. i.e., 16 = 64 / 4, 16 = 16 / 1
+    downsampleRate: 1                           # default: 1. Downsample your data if too many points. i.e., 16 = 64 / 4, 16 = 16 / 1
     lidarMinRange: 0.0                          # default: 1.0, minimum lidar range to be used
     lidarMaxRange: 1000.0                        # default: 1000.0, maximum lidar range to be used
 
@@ -51,9 +51,14 @@
     imuRate: 100.0
     imuPriorAcc: [0.0, 0.0, 0.0]
     imuPriorGyr: [0.0, 0.0, 0.0]
+    imuType : 8
+    # 6-axis(linear acceleration, angular velocity) IMU : 6
+    # 8-axis(+ roll pitch) IMU : 8
+    # 9-axis(+ roll pitch yaw) IMU : 9
 
     imuGravity: -9.81
-    imuRPYWeight: 1.0
+    useImuRPYWeight : true # need 8-Axis or 9-Axis IMU
+    imuRPYWeight: 0.1
 
     extrinsicTrans:  [-0.3212, 0.0, -0.7895]
     extrinsicRot:     [1.0, 0.0, 0.0,

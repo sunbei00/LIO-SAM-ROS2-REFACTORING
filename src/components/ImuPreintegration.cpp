@@ -73,7 +73,7 @@ void IMUPreintegration::odometryHandler(const nav_msgs::msg::Odometry::SharedPtr
     if (imuQueOpt.empty())
         return;
 
-    // odometry_incremental from mapOptimization.cpp
+    // odometry_incremental from mapOptimization.cpp (lio_sam/mapping/odometry_incremental)
     float p_x = odomMsg->pose.pose.position.x;
     float p_y = odomMsg->pose.pose.position.y;
     float p_z = odomMsg->pose.pose.position.z;

@@ -30,7 +30,6 @@ public:
     string mapFrame;
 
     // GPS Settings
-    bool useImuHeadingInitialization;
     bool useGpsElevation;
     float gpsCovThreshold;
     float poseCovThreshold;
@@ -48,6 +47,7 @@ public:
     float lidarMaxRange;
 
     // IMU
+    int imuType;
     double imuRate;
     vector<double> imuPriorAcc;
     vector<double> imuPriorGyr;
@@ -57,6 +57,7 @@ public:
     float imuGyrBiasN;
     float imuGravity;
     float imuRPYWeight;
+    bool useImuRPYWeight;
     vector<double> extRotV;
     vector<double> extRPYV;
     vector<double> extTransV;
@@ -108,8 +109,21 @@ public:
     bool keyframeCloud;
     bool keyframeGPS;
 
+
+    // Test Code
+    bool testCode1;
+    bool testCode2;
+    bool testCode3;
+
     ParamServer(std::string node_name, const rclcpp::NodeOptions & options) : Node(node_name, options)
     {
+        declare_parameter("testCode1", false);
+        get_parameter("testCode1", testCode1);
+        declare_parameter("testCode2", false);
+        get_parameter("testCode2", testCode2);
+        declare_parameter("testCode3", false);
+        get_parameter("testCode3", testCode3);
+
         declare_parameter("pointCloudTopic", "points");
         get_parameter("pointCloudTopic", pointCloudTopic);
         declare_parameter("imuTopic", "imu/data");
@@ -131,8 +145,6 @@ public:
         declare_parameter("mapFrame", "map");
         get_parameter("mapFrame", mapFrame);
 
-        declare_parameter("useImuHeadingInitialization", false);
-        get_parameter("useImuHeadingInitialization", useImuHeadingInitialization);
         declare_parameter("useGpsElevation", false);
         get_parameter("useGpsElevation", useGpsElevation);
         declare_parameter("gpsCovThreshold", 2.0);
@@ -190,9 +202,19 @@ public:
         declare_parameter("imuGravity", 9.80511);
         get_parameter("imuGravity", imuGravity);
         declare_parameter("imuRPYWeight", 0.01);
+        get_parameter("useImuRPYWeight", useImuRPYWeight);
+        declare_parameter("useImuRPYWeight", false);
         get_parameter("imuRPYWeight", imuRPYWeight);
         declare_parameter("imuRate", 100.0);
         get_parameter("imuRate", imuRate);
+        declare_parameter("imuType", 6);
+        get_parameter("imuType", imuType);
+        if (!(imuType == 6 || imuType == 8 || imuType == 9))
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("[LIO-SAM]"), "IMU Type must be 6, 8 or 9");
+            rclcpp::shutdown();
+        }
+
 
         double zeros[] = { 0.0,  0.0,  0.0};
         std::vector < double > zero_vec(zeros, std::end(zeros));
@@ -286,40 +308,6 @@ public:
         usleep(100);
     }
 
-    // sensor_msgs::msg::Imu imuConverter(const sensor_msgs::msg::Imu& imu_in)
-    // {
-    //     sensor_msgs::msg::Imu imu_out = imu_in;
-    //     // rotate acceleration
-    //     Eigen::Vector3d acc(imu_in.linear_acceleration.x, imu_in.linear_acceleration.y, imu_in.linear_acceleration.z);
-    //     acc = extRot * acc;
-    //     imu_out.linear_acceleration.x = acc.x();
-    //     imu_out.linear_acceleration.y = acc.y();
-    //     imu_out.linear_acceleration.z = acc.z();
-    //     // rotate gyroscope
-    //     Eigen::Vector3d gyr(imu_in.angular_velocity.x, imu_in.angular_velocity.y, imu_in.angular_velocity.z);
-    //     gyr = extRot * gyr;
-    //     imu_out.angular_velocity.x = gyr.x();
-    //     imu_out.angular_velocity.y = gyr.y();
-    //     imu_out.angular_velocity.z = gyr.z();
-    //
-    //     if(useImuHeadingInitialization){ // true : 9Axis-IMU, false : 6Axis-IMU
-    //         // rotate roll pitch yaw
-    //         Eigen::Quaterniond q_from(imu_in.orientation.w, imu_in.orientation.x, imu_in.orientation.y, imu_in.orientation.z);
-    //         Eigen::Quaterniond q_final = q_from * extQRPY;
-    //         imu_out.orientation.x = q_final.x();
-    //         imu_out.orientation.y = q_final.y();
-    //         imu_out.orientation.z = q_final.z();
-    //         imu_out.orientation.w = q_final.w();
-    //
-    //         if (sqrt(q_final.x()*q_final.x() + q_final.y()*q_final.y() + q_final.z()*q_final.z() + q_final.w()*q_final.w()) < 0.1)
-    //         {
-    //             RCLCPP_ERROR(get_logger(), "Invalid quaternion, please use a 9-axis IMU!, or set useImuHeadingInitialization false in config");
-    //             rclcpp::shutdown();
-    //         }
-    //     }
-    //
-    //     return imu_out;
-    // }
 
     sensor_msgs::msg::Imu imuConverter(const sensor_msgs::msg::Imu& imu_in)
     {
@@ -338,25 +326,59 @@ public:
         imu_out.angular_velocity.y = gyr.y();
         imu_out.angular_velocity.z = gyr.z();
 
-        acc = acc + ((gyr - gyr_prev) * imuRate).cross(-extTrans) + gyr.cross(gyr.cross(-extTrans));
-        imu_out.linear_acceleration.x = acc.x();
-        imu_out.linear_acceleration.y = acc.y();
-        imu_out.linear_acceleration.z = acc.z();
+        if (extTrans.norm() >= 0.1)
+        {
+            acc = acc + ((gyr - gyr_prev) * imuRate).cross(-extTrans) + gyr.cross(gyr.cross(-extTrans));
+            imu_out.linear_acceleration.x = acc.x();
+            imu_out.linear_acceleration.y = acc.y();
+            imu_out.linear_acceleration.z = acc.z();
+        }
 
-        if(useImuHeadingInitialization){ // true : 9Axis-IMU, false : 6Axis-IMU
+        if (imuType == 8 || imuType == 9)
+        {
             // rotate roll pitch yaw
             Eigen::Quaterniond q_from(imu_in.orientation.w, imu_in.orientation.x, imu_in.orientation.y, imu_in.orientation.z);
             Eigen::Quaterniond q_final = q_from * extQRPY;
+
+            if (sqrt(q_final.x()*q_final.x() + q_final.y()*q_final.y() + q_final.z()*q_final.z() + q_final.w()*q_final.w()) < 0.1)
+            {
+                RCLCPP_ERROR(get_logger(), "Invalid quaternion, set imuType 6 or error at extQRPY");
+                rclcpp::shutdown();
+            }
+
             imu_out.orientation.x = q_final.x();
             imu_out.orientation.y = q_final.y();
             imu_out.orientation.z = q_final.z();
             imu_out.orientation.w = q_final.w();
 
-            if (sqrt(q_final.x()*q_final.x() + q_final.y()*q_final.y() + q_final.z()*q_final.z() + q_final.w()*q_final.w()) < 0.1)
-            {
-                RCLCPP_ERROR(get_logger(), "Invalid quaternion, please use a 9-axis IMU!, or set useImuHeadingInitialization false in config");
-                rclcpp::shutdown();
-            }
+        } else {
+            imu_out.orientation.x = 0.0;
+            imu_out.orientation.y = 0.0;
+            imu_out.orientation.z = 0.0;
+            imu_out.orientation.w = 1.0;
+        }
+
+        if (imuType >= 8 && testCode1) {
+            Eigen::Quaterniond q_from(imu_in.orientation.w, imu_in.orientation.x, imu_in.orientation.y, imu_in.orientation.z);
+            Eigen::Quaterniond q_final = q_from * extQRPY;
+
+            // Convert quaternion to rotation matrix
+            Eigen::Matrix3d R = q_final.toRotationMatrix();
+
+            // Gravity vector in world frame
+            Eigen::Vector3d gravity(0.0, 0.0, imuGravity);
+
+            // Rotate gravity vector to body frame
+            Eigen::Vector3d gravity_body = R * gravity;
+
+            Eigen::Vector3d acc_body = acc - gravity_body + gravity;
+
+            // Update output IMU message
+            imu_out.linear_acceleration.x = acc_body.x();
+            imu_out.linear_acceleration.y = acc_body.y();
+            imu_out.linear_acceleration.z = acc_body.z();
+
+            // RCLCPP_INFO(get_logger(), "%f, %f, %f", acc_body.x(), acc_body.y(), acc_body.z());
         }
 
         gyr_prev = gyr;

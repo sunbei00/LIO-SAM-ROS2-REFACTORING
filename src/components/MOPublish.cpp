@@ -44,11 +44,12 @@ void MapOptimization::publishOdometry()
         increOdomAffine = increOdomAffine * affineIncre;
         float x, y, z, roll, pitch, yaw;
         pcl::getTranslationAndEulerAngles (increOdomAffine, x, y, z, roll, pitch, yaw);
-        if (cloudInfo.imu_available == true && useImuHeadingInitialization) // useImuHeadingInitialization - true : 9Axis-IMU, false : 6Axis-IMU
+
+        if (!testCode2 && cloudInfo.imu_available == true && useImuRPYWeight)
         {
             if (std::abs(cloudInfo.imu_pitch_init) < 1.4)
             {
-                double imuWeight = 0.1;
+                double imuWeight = testCode3? imuRPYWeight : 0.1;
                 tf2::Quaternion imuQuaternion;
                 tf2::Quaternion transformQuaternion;
                 double rollMid, pitchMid, yawMid;
@@ -66,6 +67,7 @@ void MapOptimization::publishOdometry()
                 pitch = pitchMid;
             }
         }
+
         laserOdomIncremental.header.stamp = timeLaserInfoStamp;
         laserOdomIncremental.header.frame_id = odometryFrame;
         laserOdomIncremental.child_frame_id = "odom_mapping";
