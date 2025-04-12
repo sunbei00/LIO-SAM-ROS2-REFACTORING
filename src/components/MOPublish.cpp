@@ -45,11 +45,11 @@ void MapOptimization::publishOdometry()
         float x, y, z, roll, pitch, yaw;
         pcl::getTranslationAndEulerAngles (increOdomAffine, x, y, z, roll, pitch, yaw);
 
-        if (!testCode2 && cloudInfo.imu_available == true && useImuRPYWeight)
+        if (cloudInfo.imu_available == true && useImuRPYWeight)
         {
             if (std::abs(cloudInfo.imu_pitch_init) < 1.4)
             {
-                double imuWeight = testCode3? imuRPYWeight : 0.1;
+                double imuWeight = 0.1;
                 tf2::Quaternion imuQuaternion;
                 tf2::Quaternion transformQuaternion;
                 double rollMid, pitchMid, yawMid;

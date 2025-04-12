@@ -58,6 +58,7 @@ public:
     float imuGravity;
     float imuRPYWeight;
     bool useImuRPYWeight;
+    bool imuGravityAccelAdjustment;
     vector<double> extRotV;
     vector<double> extRPYV;
     vector<double> extTransV;
@@ -110,20 +111,8 @@ public:
     bool keyframeGPS;
 
 
-    // Test Code
-    bool testCode1;
-    bool testCode2;
-    bool testCode3;
-
     ParamServer(std::string node_name, const rclcpp::NodeOptions & options) : Node(node_name, options)
     {
-        declare_parameter("testCode1", false);
-        get_parameter("testCode1", testCode1);
-        declare_parameter("testCode2", false);
-        get_parameter("testCode2", testCode2);
-        declare_parameter("testCode3", false);
-        get_parameter("testCode3", testCode3);
-
         declare_parameter("pointCloudTopic", "points");
         get_parameter("pointCloudTopic", pointCloudTopic);
         declare_parameter("imuTopic", "imu/data");
@@ -201,12 +190,14 @@ public:
         get_parameter("imuGyrBiasN", imuGyrBiasN);
         declare_parameter("imuGravity", 9.80511);
         get_parameter("imuGravity", imuGravity);
-        declare_parameter("imuRPYWeight", 0.01);
-        get_parameter("useImuRPYWeight", useImuRPYWeight);
         declare_parameter("useImuRPYWeight", false);
+        get_parameter("useImuRPYWeight", useImuRPYWeight);
+        declare_parameter("imuRPYWeight", 0.01);
         get_parameter("imuRPYWeight", imuRPYWeight);
         declare_parameter("imuRate", 100.0);
         get_parameter("imuRate", imuRate);
+        declare_parameter("imuGravityAccelAdjustment", false);
+        get_parameter("imuGravityAccelAdjustment", imuGravityAccelAdjustment);
         declare_parameter("imuType", 6);
         get_parameter("imuType", imuType);
         if (!(imuType == 6 || imuType == 8 || imuType == 9))
@@ -358,22 +349,18 @@ public:
             imu_out.orientation.w = 1.0;
         }
 
-        if (imuType >= 8 && testCode1) {
+        if (imuType >= 8 && imuGravityAccelAdjustment) {
             Eigen::Quaterniond q_from(imu_in.orientation.w, imu_in.orientation.x, imu_in.orientation.y, imu_in.orientation.z);
             Eigen::Quaterniond q_final = q_from * extQRPY;
 
-            // Convert quaternion to rotation matrix
             Eigen::Matrix3d R = q_final.toRotationMatrix();
 
-            // Gravity vector in world frame
             Eigen::Vector3d gravity(0.0, 0.0, imuGravity);
 
-            // Rotate gravity vector to body frame
             Eigen::Vector3d gravity_body = R * gravity;
 
             Eigen::Vector3d acc_body = acc - gravity_body + gravity;
 
-            // Update output IMU message
             imu_out.linear_acceleration.x = acc_body.x();
             imu_out.linear_acceleration.y = acc_body.y();
             imu_out.linear_acceleration.z = acc_body.z();
