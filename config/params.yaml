@@ -75,10 +75,6 @@
     mappingCornerLeafSize: 0.2                    # default: 0.2 - outdoor, 0.1 - indoor
     mappingSurfLeafSize: 0.4                      # default: 0.4 - outdoor, 0.2 - indoor
 
-    # robot motion constraint (in case you are using a 2D robot)
-    z_tollerance: 1000.0                          # meters
-    rotation_tollerance: 1000.0                   # radians
-
     # CPU Params
     numberOfCores: 2                              # number of cores for mapping optimization
     mappingProcessInterval: 0.01                  # seconds, regulate mapping frequency
