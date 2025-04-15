@@ -104,7 +104,8 @@ void MapOptimization::updateInitialGuess()
             transformTobeMapped[2] = 0.0;
         }
 
-        lastImuTransformation = pcl::getTransformation(transformTobeMapped[3],transformTobeMapped[4],transformTobeMapped[5], transformTobeMapped[0], transformTobeMapped[1], transformTobeMapped[2]); // save imu before return;
+        if (imuType == 8 || imuType == 9)
+            lastImuTransformation = pcl::getTransformation(0, 0, 0, cloudInfo.imu_roll_init, cloudInfo.imu_pitch_init, imuType==9 ? cloudInfo.imu_yaw_init : 0);
         return;
     }
 
@@ -130,15 +131,15 @@ void MapOptimization::updateInitialGuess()
             lastImuPreTransformation = transBack;
 
             if (imuType == 8 || imuType == 9)
-                lastImuTransformation = pcl::getTransformation(0, 0, 0, cloudInfo.imu_roll_init, cloudInfo.imu_pitch_init, cloudInfo.imu_yaw_init); // save imu before return;
+                lastImuTransformation = pcl::getTransformation(0, 0, 0, cloudInfo.imu_roll_init, cloudInfo.imu_pitch_init, imuType==9 ? cloudInfo.imu_yaw_init : 0);
             return;
         }
     }
 
     // use imu incremental estimation for pose guess (only rotation)
-    if (cloudInfo.imu_available == true && imuType == 8 || imuType == 9 )
+    if (cloudInfo.imu_available == true && (imuType == 8 || imuType == 9))
     {
-        Eigen::Affine3f transBack = pcl::getTransformation(0, 0, 0, cloudInfo.imu_roll_init, cloudInfo.imu_pitch_init, cloudInfo.imu_yaw_init);
+        Eigen::Affine3f transBack = pcl::getTransformation(0, 0, 0, cloudInfo.imu_roll_init, cloudInfo.imu_pitch_init, imuType==9 ? cloudInfo.imu_yaw_init : 0);
         Eigen::Affine3f transIncre = lastImuTransformation.inverse() * transBack;
 
         Eigen::Affine3f transTobe = trans2Affine3f(transformTobeMapped);
@@ -146,7 +147,7 @@ void MapOptimization::updateInitialGuess()
         pcl::getTranslationAndEulerAngles(transFinal, transformTobeMapped[3], transformTobeMapped[4], transformTobeMapped[5],
                                                       transformTobeMapped[0], transformTobeMapped[1], transformTobeMapped[2]);
 
-        lastImuTransformation = pcl::getTransformation(0, 0, 0, cloudInfo.imu_roll_init, cloudInfo.imu_pitch_init, cloudInfo.imu_yaw_init); // save imu before return;
+        lastImuTransformation = pcl::getTransformation(0, 0, 0, cloudInfo.imu_roll_init, cloudInfo.imu_pitch_init, imuType==9 ? cloudInfo.imu_yaw_init : 0); // save imu before return;
         return;
     }
 }
