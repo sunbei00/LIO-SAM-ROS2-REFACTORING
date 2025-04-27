@@ -41,7 +41,7 @@
     imuGyrNoise: 0.00018374638092929994 #1.5636343949698187e-03
     imuAccBiasN: 0.0001086369975568063 # 0.03
     imuGyrBiasN: 6.824629184710982e-06 #3.5640318696367613e-05
-    imuGravityAccelAdjustment: false # Gravity-based acceleration compensation # it needs 8-Axis or 9-Axis IMU
+    imuGravityAccelAdjustment: true # Gravity-based acceleration compensation # it needs 8-Axis or 9-Axis IMU
     imuRate: 100.0
     imuPriorAcc: [0.0, 0.0, 0.0]
     imuPriorGyr: [0.0, 0.0, 0.0]
