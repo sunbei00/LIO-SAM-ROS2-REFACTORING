@@ -21,7 +21,8 @@ void MapOptimization::visualizeLoopClosure()
     if (loopIndexContainer.empty())
         return;
 
-    visualization_msgs::msg::MarkerArray markerArray;
+    // visualization_msgs::msg::MarkerArray markerArray;
+    auto markerArray = pubLoopConstraintEdge->borrow_loaned_message().get();
     // loop nodes
     visualization_msgs::msg::Marker markerNode;
     markerNode.header.frame_id = odometryFrame;
